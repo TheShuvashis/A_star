@@ -4,10 +4,10 @@ using UnityEngine;
 public class NodeGrid : MonoBehaviour
 {
     public GameObject nodePrefab;
-    public Vector2 gridSize; // Grid size in rows and columns
-    public float nodeSpacing = 1f; // Distance between nodes
-    public LayerMask obstacleLayer; // Layer mask for detecting obstacles
-    public float nodeRadius = 0.5f; // Radius of the node for collision detection
+    public Vector2 gridSize;
+    public float nodeSpacing = 1f;
+    public LayerMask obstacleLayer;
+    public float nodeRadius = 0.5f;
 
     private Node[,] nodeGrid;
 
@@ -29,7 +29,6 @@ public class NodeGrid : MonoBehaviour
             {
                 Vector3 nodePosition = gridOrigin + new Vector3(x * nodeSpacing, 0, y * nodeSpacing);
 
-                // Raycast to find ground position
                 if (Physics.Raycast(nodePosition + Vector3.up * 10f, Vector3.down, out RaycastHit hit, Mathf.Infinity, ~obstacleLayer))
                 {
                     nodePosition = hit.point;
@@ -37,7 +36,6 @@ public class NodeGrid : MonoBehaviour
                     GameObject nodeObject = Instantiate(nodePrefab, nodePosition, Quaternion.identity, transform);
                     Node node = nodeObject.GetComponent<Node>();
 
-                    // Check for obstacles
                     node.isWalkable = !Physics.CheckSphere(nodePosition, nodeRadius, obstacleLayer);
 
                     node.position = nodePosition;
@@ -45,7 +43,7 @@ public class NodeGrid : MonoBehaviour
                 }
                 else
                 {
-                    nodeGrid[x, y] = null; // No valid ground found
+                    nodeGrid[x, y] = null;
                 }
             }
         }
