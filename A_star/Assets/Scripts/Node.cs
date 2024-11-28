@@ -5,16 +5,11 @@ using UnityEngine;
 public class Node : MonoBehaviour
 {
     public Vector3 position;
-    public List<Node> nodes;
-    public bool isObstacle = false;
+    public List<Node> neighbors = new List<Node>();
+    public bool isWalkable = false;
 
-    void Start()
+    private void Awake()
     {
-        
-    }
-
-    void Update()
-    {
-        
+        position = transform.position;
     }
 }
