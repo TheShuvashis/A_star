@@ -7,6 +7,23 @@ public class Node : MonoBehaviour
     public Vector3 position;
     public List<Node> neighbors = new List<Node>();
     public bool isWalkable = false;
+    public Vector3 worldPosition;
+
+    public Node(bool _isWalkable, Vector3 _worldPosition)
+    {
+        isWalkable = _isWalkable;
+        worldPosition = _worldPosition;
+    }
+
+    public int hCost;
+    public int gCost;
+
+    public int fCost
+    {
+        get {
+            return hCost + gCost;
+        }
+    }
 
     private void Awake()
     {
