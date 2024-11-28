@@ -1,15 +1,17 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class NodeGrid : MonoBehaviour
 {
     public GameObject nodePrefab;
-    public Vector2 gridSize;
-    public float nodeSpacing = 1f;
-    public LayerMask obstacleLayer;
+    public Vector2 gridSize; // Grid size in rows and columns
+    public float nodeSpacing = 1f; // Distance between nodes
+    public LayerMask obstacleLayer; // Layer mask for detecting obstacles
+    public float nodeRadius = 0.5f; // Radius of the node for collision detection
 
     private Node[,] nodeGrid;
 
-    private void Start()
+    void Start()
     {
         GenerateGrid();
     }
@@ -26,23 +28,29 @@ public class NodeGrid : MonoBehaviour
             for (int y = 0; y < gridSize.y; y++)
             {
                 Vector3 nodePosition = gridOrigin + new Vector3(x * nodeSpacing, 0, y * nodeSpacing);
-                GameObject nodeObject = Instantiate(nodePrefab, nodePosition, Quaternion.identity, transform);
 
-                Node node = nodeObject.GetComponent<Node>();
-                node.isWalkable = !Physics.CheckSphere(nodePosition, nodeSpacing / 2f, obstacleLayer);
-                nodeGrid[x, y] = node;
+                // Raycast to find ground position
+                if (Physics.Raycast(nodePosition + Vector3.up * 10f, Vector3.down, out RaycastHit hit, Mathf.Infinity, ~obstacleLayer))
+                {
+                    nodePosition = hit.point;
+
+                    GameObject nodeObject = Instantiate(nodePrefab, nodePosition, Quaternion.identity, transform);
+                    Node node = nodeObject.GetComponent<Node>();
+
+                    // Check for obstacles
+                    node.isWalkable = !Physics.CheckSphere(nodePosition, nodeRadius, obstacleLayer);
+
+                    node.position = nodePosition;
+                    nodeGrid[x, y] = node;
+                }
+                else
+                {
+                    nodeGrid[x, y] = null; // No valid ground found
+                }
             }
         }
 
         ConnectNodes();
-    }
-
-    private void ClearGrid()
-    {
-        foreach (Transform child in transform)
-        {
-            DestroyImmediate(child.gameObject);
-        }
     }
 
     private void ConnectNodes()
@@ -52,7 +60,7 @@ public class NodeGrid : MonoBehaviour
             for (int y = 0; y < gridSize.y; y++)
             {
                 Node currentNode = nodeGrid[x, y];
-                if (!currentNode.isWalkable) continue;
+                if (currentNode == null || !currentNode.isWalkable) continue;
 
                 for (int dx = -1; dx <= 1; dx++)
                 {
@@ -66,12 +74,44 @@ public class NodeGrid : MonoBehaviour
                         if (neighborX >= 0 && neighborX < gridSize.x && neighborY >= 0 && neighborY < gridSize.y)
                         {
                             Node neighborNode = nodeGrid[neighborX, neighborY];
-                            if (neighborNode.isWalkable)
-                                currentNode.neighbors.Add(neighborNode);
+                            if (neighborNode == null || !neighborNode.isWalkable) continue;
+
+                            currentNode.neighbors.Add(neighborNode);
                         }
                     }
                 }
             }
+        }
+    }
+
+    public void UpdateGrid()
+    {
+        if (nodeGrid == null) return;
+
+        for (int x = 0; x < gridSize.x; x++)
+        {
+            for (int y = 0; y < gridSize.y; y++)
+            {
+                Node node = nodeGrid[x, y];
+                if (node == null) continue;
+
+                node.isWalkable = !Physics.CheckSphere(node.position, nodeRadius, obstacleLayer);
+            }
+        }
+
+        ConnectNodes();
+    }
+
+    private void Update()
+    {
+        UpdateGrid();
+    }
+
+    private void ClearGrid()
+    {
+        foreach (Transform child in transform)
+        {
+            DestroyImmediate(child.gameObject);
         }
     }
 }

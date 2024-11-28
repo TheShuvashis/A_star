@@ -12,4 +12,10 @@ public class Node : MonoBehaviour
     {
         position = transform.position;
     }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = isWalkable ? Color.green : Color.red;
+        Gizmos.DrawSphere(position, 0.1f);
+    }
 }
