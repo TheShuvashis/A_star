@@ -106,6 +106,11 @@ public class NodeGrid : MonoBehaviour
         }
     }
 
+    public List<Node> GetNieghbors(Node _node)
+    {
+        return _node.neighbors;
+    }
+
     public void UpdateGrid()
     {
         if (nodeGrid == null) return;
@@ -131,7 +136,6 @@ public class NodeGrid : MonoBehaviour
             }
         }
     }
-
 
     public Node GetNodeAtGridPosition(int x, int y)
     {
