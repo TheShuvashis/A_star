@@ -1,38 +1,31 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections;
 
-public class Node : MonoBehaviour
+public class Node
 {
-    public Vector3 position;
-    public List<Node> neighbors = new List<Node>();
-    public bool isWalkable = false;
+
+    public bool isWalkable;
     public Vector3 worldPosition;
+    public int gridX;
+    public int gridY;
 
-    public Node(bool _isWalkable, Vector3 _worldPosition)
-    {
-        isWalkable = _isWalkable;
-        worldPosition = _worldPosition;
-    }
-
-    public int hCost;
     public int gCost;
+    public int hCost;
+    public Node parent;
+
+    public Node(bool _walkable, Vector3 _worldPos, int _gridX, int _gridY)
+    {
+        isWalkable = _walkable;
+        worldPosition = _worldPos;
+        gridX = _gridX;
+        gridY = _gridY;
+    }
 
     public int fCost
     {
-        get {
-            return hCost + gCost;
+        get
+        {
+            return gCost + hCost;
         }
-    }
-
-    private void Awake()
-    {
-        position = transform.position;
-    }
-
-    void OnDrawGizmos()
-    {
-        Gizmos.color = isWalkable ? Color.green : Color.red;
-        Gizmos.DrawSphere(position, 0.1f);
     }
 }
