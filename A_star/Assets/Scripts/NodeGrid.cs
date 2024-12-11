@@ -1,16 +1,18 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 
 public class NodeGrid : MonoBehaviour
 {
     public LayerMask unwalkableMask;
+    public LayerMask groundMask; // Layer for detecting ground
     public Vector2 gridWorldSize;
     public float nodeRadius;
+    public float maxSlopeAngle = 45f; // Maximum slope angle in degrees
+    public float maxStepHeight = 0.5f; // Maximum step height
     Node[,] grid;
-
     float nodeDiameter;
     int gridSizeX, gridSizeY;
+    public List<Node> path;
 
     void Awake()
     {
@@ -30,8 +32,55 @@ public class NodeGrid : MonoBehaviour
             for (int y = 0; y < gridSizeY; y++)
             {
                 Vector3 worldPoint = worldBottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.forward * (y * nodeDiameter + nodeRadius);
+
+                // Raycast to determine ground height
+                if (Physics.Raycast(worldPoint + Vector3.up * 10, Vector3.down, out RaycastHit hit, 20f, groundMask))
+                {
+                    worldPoint = hit.point; // Set node height
+                }
+
+                // Check walkability
                 bool walkable = !(Physics.CheckSphere(worldPoint, nodeRadius, unwalkableMask));
                 grid[x, y] = new Node(walkable, worldPoint, x, y);
+            }
+        }
+
+        CheckNodeSlopesAndSteps();
+    }
+
+    void CheckNodeSlopesAndSteps()
+    {
+        for (int x = 0; x < gridSizeX; x++)
+        {
+            for (int y = 0; y < gridSizeY; y++)
+            {
+                Node node = grid[x, y];
+                if (!node.isWalkable) continue;
+
+                foreach (Node neighbour in GetNeighbours(node))
+                {
+                    float heightDifference = Mathf.Abs(node.worldPosition.y - neighbour.worldPosition.y);
+
+                    // Check step height
+                    if (heightDifference > maxStepHeight)
+                    {
+                        node.isWalkable = false;
+                        break;
+                    }
+
+                    // Check slope
+                    float distance = Vector3.Distance(
+                        new Vector3(node.worldPosition.x, 0, node.worldPosition.z),
+                        new Vector3(neighbour.worldPosition.x, 0, neighbour.worldPosition.z)
+                    );
+
+                    float slopeAngle = Mathf.Atan2(heightDifference, distance) * Mathf.Rad2Deg;
+                    if (slopeAngle > maxSlopeAngle)
+                    {
+                        node.isWalkable = false;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -39,7 +88,6 @@ public class NodeGrid : MonoBehaviour
     public List<Node> GetNeighbours(Node node)
     {
         List<Node> neighbours = new List<Node>();
-
         for (int x = -1; x <= 1; x++)
         {
             for (int y = -1; y <= 1; y++)
@@ -56,7 +104,6 @@ public class NodeGrid : MonoBehaviour
                 }
             }
         }
-
         return neighbours;
     }
 
@@ -72,20 +119,38 @@ public class NodeGrid : MonoBehaviour
         return grid[x, y];
     }
 
-    public List<Node> path;
+    void UpdateObstacles()
+    {
+        foreach (Node node in grid)
+        {
+            bool walkable = !(Physics.CheckSphere(node.worldPosition, nodeRadius, unwalkableMask));
+            node.isWalkable = walkable;
+        }
+    }
+
+    private void Update()
+    {
+        UpdateObstacles();
+    }
+
     void OnDrawGizmos()
     {
         Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1, gridWorldSize.y));
-
         if (grid != null)
         {
-            foreach (Node n in grid)
+            foreach (Node node in grid)
             {
-                Gizmos.color = (n.isWalkable) ? Color.white : Color.red;
-                if (path != null)
-                    if (path.Contains(n))
-                        Gizmos.color = Color.black;
-                Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - .1f));
+                Gizmos.color = node.isWalkable ? Color.white : Color.red;
+                Gizmos.DrawCube(node.worldPosition, new Vector3(.1f, .1f, .1f));
+            }
+
+            if (path != null)
+            {
+                Gizmos.color = Color.green;
+                for (int i = 0; i < path.Count - 1; i++)
+                {
+                    Gizmos.DrawLine(path[i].worldPosition, path[i + 1].worldPosition);
+                }
             }
         }
     }
